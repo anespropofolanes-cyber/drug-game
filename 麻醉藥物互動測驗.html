@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻醉藥物測驗系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep:      #0a0c0f;
+    --bg-panel:     #111418;
+    --bg-card:      #161b22;
+    --bg-hover:     #1c232d;
+    --border:       #252d38;
+    --border-light: #2e3a4a;
+    --text-primary: #e8edf2;
+    --text-secondary:#8b9ab0;
+    --text-muted:   #4a5568;
+    --accent-cyan:  #38bdf8;
+    --accent-green: #4ade80;
+    --accent-amber: #fbbf24;
+    --accent-red:   #f87171;
+    --accent-purple:#a78bfa;
+    --accent-teal:  #2dd4bf;
+
+    --cat-propofol: #38bdf8;
+    --cat-etomidate:#a78bfa;
+    --cat-ketamine: #fbbf24;
+    --cat-midazolam:#4ade80;
+    --cat-opioid:   #fb923c;
+    --cat-nmb:      #f472b6;
+    --cat-volatile: #2dd4bf;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    background: #0a0c0f !important;
+  }
+
+  body {
+    background: #0a0c0f !important;
+    color: var(--text-primary);
+    font-family: 'Noto Serif TC', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #0a0c0f;
+  }
+  .screen.hidden { display: none; }
+
+  /* ══════════════════════════════
+     WELCOME SCREEN
+  ══════════════════════════════ */
+  #welcome {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .logo-line {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    margin: 0 auto 32px;
+  }
+
+  .welcome-title {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .welcome-title span { color: var(--accent-cyan); }
+
+  .welcome-sub {
+    color: var(--text-secondary);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 48px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    max-width: 860px;
+    width: 100%;
+    margin-bottom: 48px;
+  }
+
+  .cat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .cat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .cat-card:hover { border-color: var(--accent); background: var(--bg-hover); transform: translateY(-2px); }
+  .cat-card:hover::before { opacity: 1; }
+  .cat-card.selected {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+  }
+  .cat-card.selected::before { opacity: 1; }
+  .cat-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 10px; right: 12px;
+    color: var(--accent);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cat-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 4px;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .cat-name {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .cat-eng {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .cat-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .mode-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mode-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover, .mode-btn.active {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(56,189,248,0.06);
+  }
+
+  .start-btn {
+    background: var(--accent-cyan);
+    color: #000;
+    border: none;
+    padding: 14px 48px;
+    border-radius: 8px;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .start-btn:hover {
+    background: #7dd3fc;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(56,189,248,0.3);
+  }
+  .start-btn:disabled {
+    background: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ══════════════════════════════
+     QUIZ SCREEN
+  ══════════════════════════════ */
+  #quiz { padding: 0; }
+
+  .quiz-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(10,12,15,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+
+  .quiz-header-inner {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .q-index {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .progress-bar-wrap {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .timer-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 56px;
+    text-align: right;
+  }
+  .timer-display.warn { color: var(--accent-amber); }
+  .timer-display.danger { color: var(--accent-red); animation: pulse 0.6s ease infinite alternate; }
+
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+  .score-badge {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-green);
+    white-space: nowrap;
+  }
+
+  /* ── Question card ── */
+  .quiz-body {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .cat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+  }
+  .cat-badge::before { content: '◆'; font-size: 8px; }
+
+  .question-text {
+    font-size: clamp(17px, 2.5vw, 21px);
+    font-weight: 600;
+    line-height: 1.7;
+    margin-bottom: 32px;
+    color: #f0f4f8;
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: all 0.18s;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    width: 100%;
+  }
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--border-light);
+    background: var(--bg-hover);
+    transform: translateX(3px);
+  }
+  .option-btn:disabled { cursor: default; }
+
+  .opt-key {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--border);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.18s;
+  }
+
+  .option-btn.correct {
+    border-color: var(--accent-green);
+    background: rgba(74,222,128,0.08);
+  }
+  .option-btn.correct .opt-key {
+    background: var(--accent-green);
+    color: #000;
+  }
+
+  .option-btn.wrong {
+    border-color: var(--accent-red);
+    background: rgba(248,113,113,0.08);
+  }
+  .option-btn.wrong .opt-key {
+    background: var(--accent-red);
+    color: #000;
+  }
+
+  .option-btn.missed {
+    border-color: var(--accent-green);
+    background: rgba(74,222,128,0.04);
+    opacity: 0.7;
+  }
+  .option-btn.missed .opt-key {
+    background: rgba(74,222,128,0.3);
+    color: var(--accent-green);
+  }
+
+  /* ── Explanation ── */
+  .explanation-box {
+    margin-top: 24px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-cyan);
+    border-radius: 0 10px 10px 0;
+    padding: 20px 22px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .explanation-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent-cyan);
+    margin-bottom: 8px;
+  }
+  .explanation-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+  }
+
+  .next-btn {
+    margin-top: 24px;
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 12px 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .next-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(56,189,248,0.05);
+  }
+  .next-btn .arrow { transition: transform 0.2s; }
+  .next-btn:hover .arrow { transform: translateX(4px); }
+
+  /* ── Feedback flash ── */
+  .feedback-flash {
+    position: fixed;
+    top: 80px; right: 24px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 100;
+    animation: flashIn 0.2s ease, flashOut 0.3s ease 1.5s forwards;
+    pointer-events: none;
+  }
+  .feedback-flash.correct { background: rgba(74,222,128,0.15); border: 1px solid var(--accent-green); color: var(--accent-green); }
+  .feedback-flash.wrong   { background: rgba(248,113,113,0.15); border: 1px solid var(--accent-red);   color: var(--accent-red); }
+  @keyframes flashIn  { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes flashOut { from { opacity: 1; } to { opacity: 0; } }
+
+  /* ══════════════════════════════
+     RESULTS SCREEN
+  ══════════════════════════════ */
+  #results {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .results-title {
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .score-ring-wrap {
+    position: relative;
+    width: 160px; height: 160px;
+    margin: 0 auto 32px;
+  }
+  .score-ring {
+    transform: rotate(-90deg);
+  }
+  .score-ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+  .score-ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 440;
+    stroke-dashoffset: 440;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .score-ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .score-num {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .score-denom {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .rank-badge {
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .rank-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'Noto Sans TC', sans-serif;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 500px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+  .stat-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Noto Sans TC', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  /* Category breakdown */
+  .cat-breakdown {
+    max-width: 500px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+  .breakdown-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .breakdown-cat {
+    font-size: 12px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--text-secondary);
+    width: 100px;
+    flex-shrink: 0;
+  }
+  .breakdown-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .breakdown-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease 0.5s;
+  }
+  .breakdown-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 32px;
+    text-align: right;
+  }
+
+  /* Review wrong */
+  .review-section {
+    max-width: 800px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+  .review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .review-header-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+  .review-toggle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+    transition: transform 0.2s;
+  }
+  .review-toggle.open { transform: rotate(180deg); }
+
+  .review-list { display: none; flex-direction: column; gap: 12px; }
+  .review-list.open { display: flex; }
+
+  .review-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-red);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 18px;
+  }
+  .review-q {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+  .review-answer-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .review-answer {
+    font-size: 12px;
+    font-family: 'Noto Sans TC', sans-serif;
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+  .review-answer.user-wrong { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+  .review-answer.correct-ans { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+
+  .result-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .result-btn {
+    padding: 12px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .result-btn.primary {
+    background: var(--accent-cyan);
+    color: #000;
+    border: none;
+    font-weight: 600;
+  }
+  .result-btn.primary:hover { background: #7dd3fc; }
+  .result-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+  }
+  .result-btn.secondary:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
+  /* ── Util ── */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+    max-width: 500px;
+    width: 100%;
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    .quiz-header-inner { gap: 12px; }
+    .quiz-body { padding: 24px 16px 80px; }
+  }
+
+  /* ── Font size toggle ── */
+  .font-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 24px;
+    padding: 4px;
+    gap: 2px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  .font-toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .font-toggle-btn.active {
+    background: var(--accent-cyan);
+    color: #000;
+    font-weight: 600;
+  }
+  .font-toggle-btn:hover:not(.active) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  /* Font size classes applied to body */
+  body.fs-sm { font-size: 14px; }
+  body.fs-md { font-size: 16px; }
+  body.fs-lg { font-size: 19px; }
+
+  body.fs-sm .question-text  { font-size: 15px; }
+  body.fs-md .question-text  { font-size: 18px; }
+  body.fs-lg .question-text  { font-size: 22px; }
+
+  body.fs-sm .option-btn     { font-size: 13px; padding: 13px 16px; }
+  body.fs-md .option-btn     { font-size: 15px; }
+  body.fs-lg .option-btn     { font-size: 18px; padding: 18px 22px; }
+
+  body.fs-sm .explanation-text { font-size: 13px; }
+  body.fs-md .explanation-text { font-size: 14px; }
+  body.fs-lg .explanation-text { font-size: 17px; }
+
+  /* ── Clinical badge ── */
+  .diff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .diff-1 { background: rgba(74,222,128,0.15);  color: var(--accent-green);  border: 1px solid rgba(74,222,128,0.3); }
+  .diff-2 { background: rgba(251,191,36,0.15);  color: var(--accent-amber);  border: 1px solid rgba(251,191,36,0.3); }
+  .diff-3 { background: rgba(248,113,113,0.15); color: var(--accent-red);    border: 1px solid rgba(248,113,113,0.3); }
+</style>
+</head>
+<body>
+
+<!-- Font size toggle (always visible) -->
+<div class="font-toggle">
+  <button class="font-toggle-btn" data-fs="fs-sm" onclick="setFont(this)">小</button>
+  <button class="font-toggle-btn active" data-fs="fs-md" onclick="setFont(this)">中</button>
+  <button class="font-toggle-btn" data-fs="fs-lg" onclick="setFont(this)">大</button>
+</div>
+
+<!-- ══════════════ WELCOME ══════════════ -->
+<div id="welcome" class="screen">
+  <div class="logo-line"></div>
+  <h1 class="welcome-title">麻醉藥物<span>測驗系統</span></h1>
+  <p class="welcome-sub">ANESTHESIA PHARMACOLOGY QUIZ · 100 QUESTIONS</p>
+
+  <div class="category-grid" id="catGrid"></div>
+
+  <div class="mode-row">
+    <button class="mode-btn active" data-mode="timed" onclick="selectMode(this)">計時模式</button>
+    <button class="mode-btn" data-mode="free" onclick="selectMode(this)">自由作答模式</button>
+  </div>
+
+  <button class="start-btn" id="startBtn" onclick="startQuiz()">開始測驗</button>
+</div>
+
+<!-- ══════════════ QUIZ ══════════════ -->
+<div id="quiz" class="screen hidden">
+  <div class="quiz-header">
+    <div class="quiz-header-inner">
+      <span class="q-index" id="qIndex">01 / 70</span>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+      <span class="timer-display" id="timerDisplay">30</span>
+      <span class="score-badge" id="scoreBadge">0 分</span>
+    </div>
+  </div>
+
+  <div class="quiz-body" id="quizBody"></div>
+</div>
+
+<!-- ══════════════ RESULTS ══════════════ -->
+<div id="results" class="screen hidden">
+  <p class="results-title">QUIZ COMPLETE</p>
+
+  <div class="score-ring-wrap">
+    <svg class="score-ring" width="160" height="160" viewBox="0 0 160 160">
+      <circle class="score-ring-bg" cx="80" cy="80" r="70"/>
+      <circle class="score-ring-fill" id="ringFill" cx="80" cy="80" r="70"/>
+    </svg>
+    <div class="score-ring-text">
+      <div class="score-num" id="resultScore">0</div>
+      <div class="score-denom" id="resultDenom">/ 0</div>
+    </div>
+  </div>
+
+  <div class="rank-badge" id="rankBadge"></div>
+  <div class="rank-sub" id="rankSub"></div>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-val" id="statCorrect" style="color:var(--accent-green)">0</div>
+      <div class="stat-label">答對</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="statWrong" style="color:var(--accent-red)">0</div>
+      <div class="stat-label">答錯</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="statTime" style="color:var(--accent-amber)">0s</div>
+      <div class="stat-label">平均時間</div>
+    </div>
+  </div>
+
+  <div class="cat-breakdown" id="catBreakdown"></div>
+
+  <hr class="divider">
+
+  <div class="review-section" id="reviewSection">
+    <div class="review-header" onclick="toggleReview()">
+      <span class="review-header-text">WRONG ANSWERS REVIEW</span>
+      <span class="review-toggle" id="reviewToggle">▼</span>
+    </div>
+    <div class="review-list" id="reviewList"></div>
+  </div>
+
+  <div class="result-actions">
+    <button class="result-btn secondary" onclick="retryWrong()">只重做錯題</button>
+    <button class="result-btn primary" onclick="backToWelcome()">重新選題</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const CATEGORIES = [
+  { id:'propofol', name:'Propofol',       label:'靜脈麻醉誘導劑',    eng:'Intravenous Induction Agent',        color:'var(--cat-propofol)',  count:10, timer:30 },
+  { id:'etomidate',name:'Etomidate',      label:'血流動力學穩定',    eng:'Hemodynamic Stability',               color:'var(--cat-etomidate)', count:10, timer:30 },
+  { id:'ketamine', name:'Ketamine',       label:'解離性麻醉劑',      eng:'Dissociative Anesthetic',             color:'var(--cat-ketamine)',  count:10, timer:30 },
+  { id:'midazolam',name:'Midazolam',      label:'苯二氮䓬類',        eng:'Benzodiazepine',                      color:'var(--cat-midazolam)', count:10, timer:30 },
+  { id:'opioid',   name:'Fentanyl / Remi',label:'阿片類鎮痛藥',     eng:'Opioid Analgesics',                   color:'var(--cat-opioid)',    count:10, timer:30 },
+  { id:'nmb',      name:'肌肉鬆弛劑',    label:'神經肌肉阻滯劑',    eng:'Neuromuscular Blocking Agents',       color:'var(--cat-nmb)',       count:10, timer:30 },
+  { id:'volatile', name:'揮發性麻醉劑',   label:'吸入麻醉劑',        eng:'Volatile Inhalation Agents',          color:'var(--cat-volatile)',  count:10, timer:30 },
+  { id:'clinical', name:'臨床情境整合',   label:'綜合決策 · 專家級', eng:'Clinical Scenario Integration',       color:'var(--accent-red)',    count:20, timer:60 },
+  { id:'advanced', name:'進階指引更新',   label:'新藥 · 爭議 · 2025',eng:'Advanced Guidelines & Novel Agents',  color:'#e879f9',             count:10, timer:60 },
+];
+
+const ALL_QUESTIONS = [
+// ─── PROPOFOL Q1–10 ───
+{cat:'propofol', q:'Propofol 的外觀為何被暱稱為「牛奶」？',
+ opts:['含有牛奶蛋白','含有大豆油和卵磷脂的脂質乳劑','含有白色碳酸鈣懸浮液','含有氫氧化鋁'],
+ ans:1, exp:'Propofol 含有 1% 丙泊酚、10% 大豆油、2.25% 甘油和 1.2% 純化卵磷脂，形成白色脂質乳劑外觀，故稱「牛奶」。'},
+
+{cat:'propofol', q:'Propofol 的主要作用機制是什麼？',
+ opts:['阻斷 NMDA 受體','正向調節 GABA-A 受體的抑制功能','阻斷鈉離子通道','激動 μ-鴉片受體'],
+ ans:1, exp:'Propofol 通過正向調節 GABA-A 受體的抑制功能，增強 Cl⁻ 內流，產生鎮靜/麻醉效果。'},
+
+{cat:'propofol', q:'健康成人（55 歲）Propofol 的標準誘導劑量是？',
+ opts:['0.2–0.3 mg/kg','1–1.5 mg/kg','2–2.5 mg/kg','5–10 mg/kg'],
+ ans:2, exp:'健康成人標準誘導劑量為 2–2.5 mg/kg。老年、衰弱或術前用藥患者需減量。'},
+
+{cat:'propofol', q:'一位 70 歲患者接受 Propofol 誘導，劑量應如何調整？',
+ opts:['增加至 3–3.5 mg/kg','維持 2–2.5 mg/kg 不變','減少至 1–1.5 mg/kg','不適合使用 Propofol'],
+ ans:2, exp:'老年/衰弱患者因藥物清除降低、分布容積改變，Propofol 誘導劑量應減少至約 1–1.5 mg/kg，並緩慢給藥。'},
+
+{cat:'propofol', q:'Propofol 對顱內壓（ICP）的影響是？',
+ opts:['增加 ICP','降低 ICP','對 ICP 無影響','先升高後降低 ICP'],
+ ans:1, exp:'Propofol 可降低腦血流、腦代謝氧耗（CMRO₂）和顱內壓，適用於需要腦保護的神經外科手術。'},
+
+{cat:'propofol', q:'ICU 患者接受 Propofol 輸注 48 小時後出現不明原因代謝性酸中毒和 Brugada 樣心電圖改變，最可能的診斷是？',
+ opts:['敗血症','Propofol 輸注症候群（PRIS）','急性心肌梗塞','腎衰竭'],
+ ans:1, exp:'PRIS 的特徵包括代謝性酸中毒、Brugada 樣心電圖改變、橫紋肌溶解、高鉀血症、肝腫大、心臟衰竭及腎衰竭。代謝性酸中毒和心電圖改變是早期表現。'},
+
+{cat:'propofol', q:'關於 PRIS，以下哪項敘述是正確的？',
+ opts:['僅在 >5 mg/kg/hr 時才會發生','高三酸甘油酯是最可靠的早期指標','可在低於 4 mg/kg/hr 的劑量下發生，且典型特徵常缺失','僅發生在兒童患者'],
+ ans:2, exp:'最新研究顯示 PRIS 可在 <4 mg/kg/hr 的劑量下發生，且典型特徵（高三酸甘油酯、發燒、肝腫大）在 >95% 病例中缺失，需保持高度警覺。'},
+
+{cat:'propofol', q:'Propofol 注射時最常見的局部不良反應是？',
+ opts:['組織壞死','注射部位疼痛','靜脈炎','過敏性皮疹'],
+ ans:1, exp:'注射疼痛發生率高達 30%，使用較粗的肘前靜脈、預先注射 Lidocaine 或 Ketamine，或將 Propofol 與 Lidocaine 混合，可降低發生率。'},
+
+{cat:'propofol', q:'以下哪種患者應避免使用 Propofol？',
+ opts:['癲癇患者','對雞蛋或大豆過敏的患者','高血壓患者','糖尿病患者'],
+ ans:1, exp:'Propofol 含有大豆油和卵磷脂（源自雞蛋），對雞蛋卵磷脂或大豆油有嚴重過敏史的患者應謹慎使用或避免。'},
+
+{cat:'propofol', q:'Propofol 對眼內壓的影響是？',
+ opts:['增加眼內壓','降低眼內壓','無影響','僅在高劑量時增加'],
+ ans:1, exp:'Propofol 可降低眼內壓，機制可能與全身血管阻力下降有關，適合眼科手術的麻醉選擇。'},
+
+// ─── ETOMIDATE Q11–20 ───
+{cat:'etomidate', q:'Etomidate 的主要作用機制是什麼？',
+ opts:['阻斷 NMDA 受體','作用於 GABA-A 受體（咪唑衍生物）','激動 μ-鴉片受體','阻斷鈣離子通道'],
+ ans:1, exp:'Etomidate 是咪唑衍生的鎮靜催眠劑，通過正向調節 GABA-A 受體發揮作用，與 Propofol 機制相似但結構不同。'},
+
+{cat:'etomidate', q:'Etomidate 最被廣泛使用的臨床場景是？',
+ opts:['ICU 長期鎮靜','門診鎮靜','血流動力學不穩定患者的緊急插管誘導','術後疼痛管理'],
+ ans:2, exp:'Etomidate 因對心血管系統影響極小（對血壓和心率影響最小的靜脈誘導劑），最常用於血流動力學不穩定患者的緊急插管，如休克、創傷患者。'},
+
+{cat:'etomidate', q:'Etomidate 的標準誘導劑量是？',
+ opts:['0.02–0.03 mg/kg','0.2–0.3 mg/kg','2–3 mg/kg','5–10 mg/kg'],
+ ans:1, exp:'Etomidate 標準誘導劑量為 0.2–0.3 mg/kg，靜脈注射，起效迅速（30–60 秒）。'},
+
+{cat:'etomidate', q:'Etomidate 最獨特且最受關注的不良反應是？',
+ opts:['惡性高熱','抑制 11β-羥化酶導致腎上腺皮質功能抑制','組胺釋放','支氣管痙攣'],
+ ans:1, exp:'Etomidate 抑制 11β-羥化酶，阻斷皮質醇合成的關鍵步驟，單次誘導劑量即可導致腎上腺皮質功能抑制，持續效應長達 72 小時。'},
+
+{cat:'etomidate', q:'單次劑量 Etomidate 對皮質醇生成的抑制可持續多久？',
+ opts:['1–2 小時','6–12 小時','長達 72 小時','7 天'],
+ ans:2, exp:'單次誘導劑量 Etomidate 可抑制皮質醇生成長達 72 小時，在敗血症等需要腎上腺功能完整的危重症患者中尤為不利。'},
+
+{cat:'etomidate', q:'以下哪類患者使用 Etomidate 需特別謹慎？',
+ opts:['哮喘患者','敗血症患者','肥胖患者','糖尿病患者'],
+ ans:1, exp:'敗血症患者的腎上腺功能儲備已不足，Etomidate 的腎上腺抑制效應可能增加器官功能障礙和死亡風險，兒科研究顯示死亡率 OR 達 4.51。'},
+
+{cat:'etomidate', q:'Etomidate 最常見的非自主運動副作用是？',
+ opts:['震顫','肌陣攣（myoclonus）','舞蹈症','手足徐動症'],
+ ans:1, exp:'肌陣攣是 Etomidate 最常見但機制不明的副作用，發生率高，即使新開發類似物（如 ABP-700、ET-26）仍持續存在此問題，可預先給予 Midazolam 或 Fentanyl 減少發生。'},
+
+{cat:'etomidate', q:'與 Propofol 相比，Etomidate 用於老年患者全靜脈麻醉時，以下哪項併發症風險增加？',
+ opts:['低血壓','肺炎','惡性高熱','過敏反應'],
+ ans:1, exp:'EPIC 試驗（2022 JAMA Surgery）發現 Etomidate 與肺部併發症（特別是肺炎）增加相關，且是創傷患者醫院獲得性肺炎的獨立危險因素。'},
+
+{cat:'etomidate', q:'關於 Etomidate 的血流動力學效應，以下哪項最準確？',
+ opts:['完全沒有心血管影響','比 Propofol 更容易引起低血壓','較少引起低血壓，但可能引起高血壓','主要引起心動過緩'],
+ ans:2, exp:'EPIC 試驗顯示與 Propofol 相比，Etomidate 導致較少低血壓但更多高血壓，且高血壓貫穿整個麻醉過程，並非完全「血流動力學穩定」。'},
+
+{cat:'etomidate', q:'某些國家已將 Etomidate 從市場移除，主要原因是？',
+ opts:['生產成本過高','腎上腺皮質抑制的安全顧慮','過敏反應發生率過高','缺乏臨床療效'],
+ ans:1, exp:'多個國家因對腎上腺皮質抑制（特別是在敗血症患者中）的安全顧慮，將 Etomidate 從市場移除，某些指南也建議避免在敗血症患者中使用。'},
+
+// ─── KETAMINE Q21–30 ───
+{cat:'ketamine', q:'Ketamine 的主要作用機制是？',
+ opts:['正向調節 GABA-A 受體','阻斷 NMDA 受體（解離性麻醉劑）','激動 μ-鴉片受體','阻斷鈉離子通道'],
+ ans:1, exp:'Ketamine 是 NMDA 受體拮抗劑，通過阻斷 NMDA 受體產生解離性麻醉（意識與感覺分離），同時保留自主呼吸和咽喉反射。'},
+
+{cat:'ketamine', q:'Ketamine 對血壓和心率的典型影響是？',
+ opts:['降低血壓和心率','升高血壓和心率（交感神經興奮）','對血壓和心率無影響','升高血壓但降低心率'],
+ ans:1, exp:'Ketamine 增加血漿兒茶酚胺濃度，刺激交感神經，導致血壓升高、心率加快，是血流動力學不穩定患者的優選誘導劑。'},
+
+{cat:'ketamine', q:'Ketamine 用於 RSI 的標準誘導劑量是？',
+ opts:['0.1–0.2 mg/kg','0.5 mg/kg','1–2 mg/kg','5–10 mg/kg'],
+ ans:2, exp:'RSI 誘導劑量為 1–2 mg/kg IV（或 4–5 mg/kg IM）。亞解離鎮痛劑量為 0.1–0.3 mg/kg。'},
+
+{cat:'ketamine', q:'以下哪種臨床情境最適合選擇 Ketamine 作為誘導藥物？',
+ opts:['顱內壓升高的患者','嚴重支氣管痙攣/哮喘的患者','精神分裂症患者','甲狀腺功能亢進患者'],
+ ans:1, exp:'Ketamine 是強效支氣管擴張劑，適合嚴重支氣管痙攣/哮喘患者；同時保留自主呼吸和咽喉反射，特別有優勢。'},
+
+{cat:'ketamine', q:'Ketamine 在兒茶酚胺耗竭的患者中可能出現什麼意外效應？',
+ opts:['嚴重高血壓','低血壓（因直接心肌抑制作用）','惡性高熱','支氣管痙攣'],
+ ans:1, exp:'Ketamine 本身是負性肌力藥和血管擴張劑，在兒茶酚胺儲備耗竭的患者（如長期休克）中，無法依靠交感興奮代償，可能導致低血壓。'},
+
+{cat:'ketamine', q:'長期使用 Ketamine 最嚴重的泌尿系統併發症是？',
+ opts:['腎結石','Ketamine 膀胱炎（嚴重膀胱炎伴尿頻、血尿）','前列腺肥大','尿道狹窄'],
+ ans:1, exp:'Ketamine 膀胱炎表現為嚴重膀胱炎、尿頻、尿急、排尿困難、急迫性尿失禁、血尿，嚴重時可繼發腎功能損害，甚至腎梗塞。'},
+
+{cat:'ketamine', q:'Ketamine 膀胱炎在慢性疼痛患者中最早可在多少天治療後出現？',
+ opts:['1 天','9 天','30 天','90 天'],
+ ans:1, exp:'研究顯示慢性疼痛患者在僅 9 天的 Ketamine 治療後即可出現泌尿生殖系統症狀，且停藥後恢復程度存疑，需密切監測。'},
+
+{cat:'ketamine', q:'Ketamine 最常見的精神副作用是？',
+ opts:['嗜睡','解離、幻覺、生動夢境','抑鬱','失語症'],
+ ans:1, exp:'解離、幻覺、生動夢境和離體體驗是 Ketamine 最常見的精神副作用，大多數在輸注後 80–240 分鐘內消退，但慢性使用可能導致持久精神症狀。'},
+
+{cat:'ketamine', q:'以下哪種藥物可用於減輕 Ketamine 的精神模擬副作用？',
+ opts:['阿托品','苯二氮䓬類藥物（如 Midazolam）','腎上腺素','多巴胺'],
+ ans:1, exp:'苯二氮䓬類藥物（如 Midazolam）和可樂定可減輕 Ketamine 的精神模擬不良反應，某些專家建議所有血壓正常患者使用可樂定貼片。'},
+
+{cat:'ketamine', q:'Ketamine 與 Etomidate 在危重症患者插管中的死亡率比較，最新證據顯示？',
+ opts:['Ketamine 明顯降低死亡率','Etomidate 明顯降低死亡率','兩者死亡率無顯著差異','尚無任何比較研究'],
+ ans:2, exp:'2025 年 NEJM 研究及多項統合分析顯示，Ketamine 與 Etomidate 在危重症患者插管中的死亡率無顯著差異，打破了長期以來對兩者優劣的爭論。'},
+
+// ─── MIDAZOLAM Q31–40 ───
+{cat:'midazolam', q:'Midazolam 屬於哪一類藥物？',
+ opts:['巴比妥類','苯二氮䓬類','鴉片類','咪唑類'],
+ ans:1, exp:'Midazolam 是水溶性的苯二氮䓬類藥物，通過增強 GABA-A 受體的抑制功能發揮鎮靜、抗焦慮、遺忘和抗癲癇作用。'},
+
+{cat:'midazolam', q:'Midazolam 的主要臨床用途包括以下哪項？',
+ opts:['術前鎮靜、抗焦慮、遺忘','術後疼痛管理','神經肌肉阻滯','抗癲癇（唯一用途）'],
+ ans:0, exp:'Midazolam 最重要的臨床用途是術前鎮靜（減輕焦慮）、提供術中遺忘效果，以及作為麻醉輔助藥物。亦可用於抗癲癇，但非唯一用途。'},
+
+{cat:'midazolam', q:'Midazolam 用於成人術前 IM 鎮靜的標準劑量是？',
+ opts:['0.01 mg/kg','0.07–0.08 mg/kg（約 5 mg）','0.5 mg/kg','2 mg/kg'],
+ ans:1, exp:'成人術前 IM 鎮靜劑量為 0.07–0.08 mg/kg（約 5 mg），術前 30–60 分鐘給予，可有效減輕焦慮並提供術中遺忘。'},
+
+{cat:'midazolam', q:'Midazolam 與鴉片類藥物合用時，最需要警惕的風險是？',
+ opts:['高血壓危象','深度鎮靜、呼吸抑制、昏迷甚至死亡','惡性高熱','腎上腺抑制'],
+ ans:1, exp:'苯二氮䓬類與鴉片類合用有協同的 CNS 和呼吸抑制效應，FDA 黑框警告指出此組合可能導致深度鎮靜、呼吸抑制、昏迷甚至死亡。'},
+
+{cat:'midazolam', q:'Midazolam 的特異性拮抗劑是？',
+ opts:['Naloxone','Flumazenil','Sugammadex','Dantrolene'],
+ ans:1, exp:'Flumazenil 是苯二氮䓬類受體的特異性拮抗劑，可逆轉 Midazolam 的鎮靜和呼吸抑制效應，但作用時間短，可能需要重複給藥。'},
+
+{cat:'midazolam', q:'為什麼 Midazolam 不太適合用於危重症患者的 RSI？',
+ opts:['價格太貴','起效時間較長且是強效靜脈擴張劑','會引起惡性高熱','會抑制腎上腺功能'],
+ ans:1, exp:'Midazolam 起效時間較 Propofol 和 Etomidate 長，且在 RSI 劑量下是強效靜脈擴張劑，可能導致血流動力學不穩定患者出現嚴重低血壓。'},
+
+{cat:'midazolam', q:'Midazolam IV 鎮靜時最常見的不良反應是？',
+ opts:['高血壓','潮氣量/呼吸頻率下降和呼吸暫停','心動過速','噁心嘔吐'],
+ ans:1, exp:'IV 給藥後最常見的不良反應是潮氣量/呼吸頻率下降（23.3%）和呼吸暫停（15.4%），需要密切監測並備有呼吸支持設備。'},
+
+{cat:'midazolam', q:'長期 ICU 使用 Midazolam 後突然停藥可能出現什麼問題？',
+ opts:['腎上腺危象','戒斷症狀','惡性高熱','橫紋肌溶解'],
+ ans:1, exp:'長期 ICU 使用苯二氮䓬類藥物後突然停藥，可能出現戒斷症狀，包括焦慮、震顫、出汗、心動過速，嚴重時可出現癲癇發作，應逐漸減量。'},
+
+{cat:'midazolam', q:'Midazolam 在兒童中可能出現的矛盾反應（paradoxical reaction）是？',
+ opts:['深度鎮靜','躁動、攻擊性、非自主運動','低血壓','支氣管痙攣'],
+ ans:1, exp:'兒童（有時成人亦有）使用 Midazolam 後可出現矛盾反應，包括躁動、攻擊性、非自主運動和好鬥行為，原因可能與皮質去抑制有關。'},
+
+{cat:'midazolam', q:'老年或高危患者使用 Midazolam 時，以下哪項措施最重要？',
+ opts:['增加劑量以確保效果','緩慢滴定、減少劑量、密切監測心肺功能','必須與鴉片類藥物合用','僅限口服給藥'],
+ ans:1, exp:'老年患者因藥物清除降低、對 CNS 效應更敏感，Midazolam 應緩慢滴定、大幅減量，並密切監測心肺功能，避免過度鎮靜和呼吸抑制。'},
+
+// ─── OPIOIDS Q41–50 ───
+{cat:'opioid', q:'Fentanyl 的效力約為嗎啡的多少倍？',
+ opts:['10 倍','50–100 倍','500 倍','1000 倍'],
+ ans:1, exp:'Fentanyl 的效力約為嗎啡的 50–100 倍，高脂溶性使其起效快速（2–5 分鐘）且分布廣泛，適合術中使用。'},
+
+{cat:'opioid', q:'Fentanyl 的主要作用機制是？',
+ opts:['阻斷 NMDA 受體','選擇性 μ-鴉片受體激動劑','正向調節 GABA-A 受體','阻斷鈉離子通道'],
+ ans:1, exp:'Fentanyl 是高選擇性 μ-鴉片受體激動劑，通過與脊髓、腦幹和大腦皮層的 μ 受體結合，發揮強效鎮痛作用。'},
+
+{cat:'opioid', q:'Remifentanil 與其他鴉片類藥物最大的不同是什麼？',
+ opts:['效力更強','被非特異性酯酶代謝，context-sensitive 半衰期極短（約 3.2 分鐘），不受輸注時間影響','不會引起呼吸抑制','只能口服給藥'],
+ ans:1, exp:'Remifentanil 由血漿和組織中的非特異性酯酶代謝，context-sensitive 半衰期約 3.2 分鐘，不隨輸注時間延長而增加，是其最獨特的藥代動力學特性。'},
+
+{cat:'opioid', q:'Remifentanil 在以下哪種手術中特別有優勢？',
+ opts:['需要術後長時間鎮痛的手術','需要快速甦醒和神經功能評估的神經外科手術','門診小手術（不需要任何鎮痛）','心臟移植手術'],
+ ans:1, exp:'Remifentanil 因超短效特性，特別適合需要快速甦醒和術中神經功能評估的神經外科手術（如清醒開顱術），可精確控制鎮痛深度。'},
+
+{cat:'opioid', q:'使用 Remifentanil 時，關於術後疼痛管理需要特別注意什麼？',
+ opts:['Remifentanil 提供足夠的術後鎮痛','因快速消退，需要提前安排替代鎮痛方案','術後繼續 Remifentanil 輸注即可','不需要額外鎮痛'],
+ ans:1, exp:'Remifentanil 停藥後鎮痛效果在數分鐘內消失，必須在停藥前提前安排替代鎮痛方案（如長效鴉片類、區域麻醉等），否則患者會經歷劇烈疼痛。'},
+
+{cat:'opioid', q:'Fentanyl 快速靜脈推注可能引起的特殊不良反應是？',
+ opts:['支氣管擴張','胸壁僵硬（木胸）','高血壓','心動過速'],
+ ans:1, exp:'Fentanyl 快速靜脈推注可引起胸壁僵硬（「木胸」，wooden chest syndrome），導致通氣困難，可能需要神經肌肉阻滯劑才能有效通氣。'},
+
+{cat:'opioid', q:'以下哪項是所有鴉片類麻醉藥物的共同不良反應？',
+ opts:['腎上腺抑制','呼吸抑制、噁心嘔吐、瘙癢','惡性高熱','肌陣攣'],
+ ans:1, exp:'呼吸抑制、噁心嘔吐和瘙癢是所有 μ-鴉片受體激動劑的共同不良反應，其中呼吸抑制最為嚴重，可危及生命。'},
+
+{cat:'opioid', q:'Remifentanil 在腎功能或肝功能不全患者中的藥代動力學特點是？',
+ opts:['需要大幅減量','完全禁忌使用','受影響極小，因為主要由血漿和組織酯酶代謝','半衰期延長至數小時'],
+ ans:2, exp:'Remifentanil 由非特異性酯酶代謝（非肝腎代謝），因此在肝腎功能不全患者中藥代動力學受影響極小，是此類患者的理想鎮痛選擇。'},
+
+{cat:'opioid', q:'Fentanyl 的特異性拮抗劑是？',
+ opts:['Flumazenil','Naloxone','Sugammadex','Dantrolene'],
+ ans:1, exp:'Naloxone 是所有鴉片類藥物（包括 Fentanyl）的特異性拮抗劑，可迅速逆轉呼吸抑制和鎮靜效應，但作用時間短（30–90 分鐘），可能需要重複給藥。'},
+
+{cat:'opioid', q:'與 Fentanyl 相比，Remifentanil 在術中更容易引起的血流動力學副作用是？',
+ opts:['高血壓和心動過速','低血壓和心動過緩','心律不整','肺動脈高壓'],
+ ans:1, exp:'Remifentanil 比 Fentanyl 更容易引起低血壓和心動過緩，特別是在快速推注或高劑量輸注時，需緩慢給藥並密切監測血壓和心率。'},
+
+// ─── NMB Q51–60 ───
+{cat:'nmb', q:'Succinylcholine 的作用機制是？',
+ opts:['非去極化型神經肌肉阻滯','去極化型神經肌肉阻滯（菸鹼受體激動劑）','阻斷 GABA 受體','阻斷鈣離子通道'],
+ ans:1, exp:'Succinylcholine 是去極化型神經肌肉阻滯劑，模擬乙醯膽鹼激動菸鹼受體，引起初始去極化（肌束顫動）後持續阻滯（無法再去極化）。'},
+
+{cat:'nmb', q:'Succinylcholine 的起效時間和作用持續時間分別約為？',
+ opts:['起效 5 分鐘，持續 30 分鐘','起效 40–60 秒，持續 6–10 分鐘','起效 10 分鐘，持續 2 小時','起效 30 秒，持續 60 分鐘'],
+ ans:1, exp:'Succinylcholine 起效約 40–60 秒，作用持續約 6–10 分鐘，是目前起效最快、作用時間最短的神經肌肉阻滯劑，特別適合困難氣道管理的 RSI。'},
+
+{cat:'nmb', q:'以下哪種情況是 Succinylcholine 的絕對禁忌症？',
+ opts:['肥胖','已知高鉀血症或惡性高熱病史','高血壓','糖尿病'],
+ ans:1, exp:'已知高鉀血症和個人/家族惡性高熱病史是 Succinylcholine 的絕對禁忌症。此外，急性期後的大面積燒傷、多發性創傷、長期臥床、上運動神經元損傷等亦為禁忌。'},
+
+{cat:'nmb', q:'大面積燒傷患者在傷後多久不應使用 Succinylcholine？',
+ opts:['12 小時後','24 小時後','48 小時後（因高鉀血症風險）','永遠不能使用'],
+ ans:2, exp:'大面積燒傷患者在傷後 48 小時至數月內，因去神經化導致菸鹼受體上調（junctional 和 extrajunctional），使用 Succinylcholine 可引起致命性高鉀血症。'},
+
+{cat:'nmb', q:'Rocuronium 用於 RSI 的推薦劑量是？',
+ opts:['0.1 mg/kg','0.6 mg/kg','1.0–1.2 mg/kg','3 mg/kg'],
+ ans:2, exp:'RSI 時 Rocuronium 推薦劑量為 1.0–1.2 mg/kg（比常規插管劑量 0.6 mg/kg 高），以達到更快的起效時間（約 60 秒），可與 Succinylcholine 相當。'},
+
+{cat:'nmb', q:'Rocuronium 相比 Succinylcholine 的主要優勢是？',
+ opts:['起效更快','無高鉀血症、惡性高熱等嚴重副作用風險','作用時間更短','價格更便宜'],
+ ans:1, exp:'Rocuronium 無高鉀血症、惡性高熱、肌束顫動等嚴重副作用風險，且有特異性拮抗劑 Sugammadex 可快速逆轉，是重要的安全優勢。'},
+
+{cat:'nmb', q:'Rocuronium 的特異性拮抗劑是？',
+ opts:['Neostigmine','Sugammadex','Flumazenil','Naloxone'],
+ ans:1, exp:'Sugammadex 是 Rocuronium（和 Vecuronium）的特異性拮抗劑，通過包裹藥物分子直接逆轉神經肌肉阻滯，起效快速且可靠，可在緊急情況下立即逆轉深度阻滯。'},
+
+{cat:'nmb', q:'Succinylcholine 使用後出現的肌束顫動（fasciculations）是由什麼引起的？',
+ opts:['過敏反應','初始去極化引起的肌肉收縮','中樞神經系統興奮','電解質紊亂'],
+ ans:1, exp:'肌束顫動是 Succinylcholine 初始去極化階段引起的短暫、不協調的肌肉收縮，是去極化型阻滯劑的特徵性表現，可能引起術後肌痛。'},
+
+{cat:'nmb', q:'以下哪種疾病患者使用 Succinylcholine 有致命性高鉀血症風險？',
+ opts:['甲狀腺功能亢進','肌營養不良症（muscular dystrophy）','帕金森病','阿茲海默症'],
+ ans:1, exp:'肌營養不良症（特別是 Duchenne 型）患者使用 Succinylcholine 可引起橫紋肌溶解和致命性高鉀血症，FDA 已發布黑框警告，此類患者應避免使用。'},
+
+{cat:'nmb', q:'Rocuronium 的標準劑量（0.6 mg/kg）作用持續時間約為？',
+ opts:['5–10 分鐘','15–20 分鐘','37–72 分鐘','2–3 小時'],
+ ans:2, exp:'Rocuronium 標準劑量（0.6 mg/kg）的臨床作用持續時間約 37–72 分鐘（中效型）。高劑量（1.2 mg/kg）用於 RSI 時，作用時間延長至約 90–120 分鐘，需要備有 Sugammadex。'},
+
+// ─── VOLATILE Q61–70 ───
+{cat:'volatile', q:'Sevoflurane 和 Desflurane 相比舊型吸入麻醉劑的主要優勢是？',
+ opts:['更便宜','血液溶解度更低，麻醉深度控制更精確，甦醒更快','完全沒有副作用','不需要蒸發器'],
+ ans:1, exp:'Sevoflurane（血氣分配係數 0.65）和 Desflurane（0.42）的血液溶解度遠低於 Halothane（2.54）和 Isoflurane（1.46），使麻醉深度控制更精確、誘導和甦醒更快。'},
+
+{cat:'volatile', q:'以下哪種吸入麻醉劑最適合用於面罩吸入誘導？',
+ opts:['Desflurane（因為起效更快）','Sevoflurane（因為無刺激性氣味，氣道刺激小）','兩者同樣適合','兩者都不適合'],
+ ans:1, exp:'Sevoflurane 氣味宜人、無刺激性，不會引起咳嗽或喉痙攣，是面罩吸入誘導的首選藥物，特別適合兒童和困難靜脈通路患者。'},
+
+{cat:'volatile', q:'Desflurane 不適合用於吸入誘導的主要原因是？',
+ opts:['起效太慢','刺激性氣味，容易引起咳嗽、喉痙攣和支氣管痙攣','價格太貴','會引起惡性高熱'],
+ ans:1, exp:'Desflurane 具有刺激性氣味，吸入時容易引起咳嗽、屏氣、喉痙攣和支氣管痙攣，因此不適合用於吸入誘導，通常用於靜脈誘導後的麻醉維持。'},
+
+{cat:'volatile', q:'Sevoflurane 與 CO₂ 吸收劑反應產生的潛在腎毒性代謝產物是？',
+ opts:['一氧化碳','Compound A（乙烯基醚）','氟化氫','甲醛'],
+ ans:1, exp:'Sevoflurane 與乾燥的 CO₂ 吸收劑（特別是鈉石灰和鋇石灰）反應可產生 Compound A，動物實驗顯示有腎毒性，但在臨床使用條件下，其臨床意義仍有爭議。'},
+
+{cat:'volatile', q:'以下哪種吸入麻醉劑更容易產生一氧化碳（CO）？',
+ opts:['Sevoflurane','Desflurane','兩者相同','都不會產生 CO'],
+ ans:1, exp:'Desflurane（以及其他含 CHF₂-O- 基團的吸入麻醉劑如 Enflurane 和 Isoflurane）與乾燥的 CO₂ 吸收劑反應更容易產生一氧化碳，特別是在週一早晨。'},
+
+{cat:'volatile', q:'關於甦醒速度，以下哪項敘述正確？',
+ opts:['Sevoflurane 甦醒比 Desflurane 快','Desflurane 甦醒比 Sevoflurane 快（睜眼時間快約 3 分鐘）','兩者甦醒速度完全相同','甦醒速度取決於患者體重，與藥物無關'],
+ ans:1, exp:'Desflurane 因血氣分配係數更低（0.42 vs 0.65），甦醒速度比 Sevoflurane 快，研究顯示睜眼時間平均快約 3 分鐘，但對出院時間的影響較小。'},
+
+{cat:'volatile', q:'所有揮發性麻醉劑（包括 Sevoflurane 和 Desflurane）都可能觸發的罕見致命併發症是？',
+ opts:['腎上腺危象','惡性高熱','Propofol 輸注症候群','血清素症候群'],
+ ans:1, exp:'所有揮發性麻醉劑（Sevoflurane、Desflurane、Isoflurane、Halothane 等）都是惡性高熱的觸發藥物，與 Succinylcholine 並列為兩大類觸發因素。'},
+
+{cat:'volatile', q:'惡性高熱最早期和最重要的診斷線索是？',
+ opts:['體溫急劇升高','呼氣末 CO₂ 不明原因持續升高','低血壓','瞳孔散大'],
+ ans:1, exp:'呼氣末 CO₂ 不明原因持續升高（儘管增加分鐘通氣量）是惡性高熱最早期和最重要的診斷線索。體溫升高可能是較晚出現的表現。'},
+
+{cat:'volatile', q:'惡性高熱的特異性治療藥物是？',
+ opts:['腎上腺素','Dantrolene（丹曲林）','Sugammadex','Flumazenil'],
+ ans:1, exp:'Dantrolene（丹曲林）是惡性高熱的特異性治療藥物，通過阻斷骨骼肌 ryanodine 受體減少鈣離子釋放。任何進行全身麻醉的場所都應備有 Dantrolene。'},
+
+{cat:'volatile', q:'在兒科麻醉中，Sevoflurane 特別受歡迎的原因是？',
+ opts:['完全沒有副作用','氣味宜人、無氣道刺激，適合面罩吸入誘導，兒童接受度高','不需要監測','可以口服給藥'],
+ ans:1, exp:'Sevoflurane 氣味宜人（類似水果香味）、無氣道刺激，兒童接受度高，是兒科面罩吸入誘導的金標準藥物，尤其適合難以建立靜脈通路的嬰幼兒。'},
+
+// ─── CLINICAL SCENARIOS Q71–90 ───
+{cat:'clinical', diff:1, q:'【敗血性休克 RSI】\n45歲男性，敗血性休克（MAP 55 mmHg），已使用 Norepinephrine 0.3 mcg/kg/min，需要緊急插管。以下哪種誘導方案最合適？',
+ opts:['Propofol 2 mg/kg + Succinylcholine 1.5 mg/kg','Etomidate 0.3 mg/kg + Rocuronium 1.2 mg/kg','Midazolam 0.3 mg/kg + Succinylcholine 1.5 mg/kg','Ketamine 2 mg/kg + Rocuronium 1.2 mg/kg'],
+ ans:1, exp:'根據 2025 年 NEJM RSI 試驗（2365名患者），Etomidate 在插管期間的低血壓、升壓藥需求和室性心動過速發生率均低於 Ketamine，尤其在敗血症和已使用升壓藥的亞組中差異更顯著。兩者 28 天死亡率無差異，但血流動力學穩定性 Etomidate 優於 Ketamine。在已使用高劑量升壓藥的患者中，Ketamine 的交感興奮作用可能因兒茶酚胺耗竭而失效，反而暴露其直接心肌抑制。Propofol 和 Midazolam 在此情境中會加重低血壓，不適合。'},
+
+{cat:'clinical', diff:2, q:'【哮喘合併高血壓】\n28歲女性，重度哮喘急性發作，SpO₂ 85%，嚴重支氣管痙攣需要緊急插管，同時有未控制的高血壓（BP 180/110）。最佳誘導藥物是？',
+ opts:['Propofol — 因為可降低血壓','Ketamine — 因為具有支氣管擴張作用','Etomidate — 因為血流動力學最穩定','Midazolam — 因為抗焦慮效果最好'],
+ ans:1, exp:'Ketamine 是嚴重支氣管痙攣的首選誘導藥物，具有直接支氣管擴張作用。雖然患者有高血壓，但在危及生命的低氧血症面前，解除支氣管痙攣的優先級高於血壓控制。Propofol 無支氣管擴張作用且在低氧血症中低血壓風險更大。Etomidate 血流動力學穩定但同樣無支氣管擴張作用。Midazolam 起效慢，不適合緊急情況。'},
+
+{cat:'clinical', diff:2, q:'【大面積燒傷 RSI 肌鬆劑選擇】\n32歲男性，3天前大面積燒傷（60% TBSA），現需要緊急插管。以下哪種肌鬆劑選擇最安全？',
+ opts:['Succinylcholine 1.5 mg/kg — 起效最快','Rocuronium 0.6 mg/kg — 標準劑量','Rocuronium 1.2 mg/kg — 高劑量快速起效','Succinylcholine 2 mg/kg — 增量確保效果'],
+ ans:2, exp:'大面積燒傷患者在傷後 48 小時至數月內，因去神經化導致菸鹼受體上調，使用 Succinylcholine 可引起致命性高鉀血症（排除 A 和 D）。此患者已燒傷 3 天，Succinylcholine 絕對禁忌。Rocuronium 1.2 mg/kg（RSI 劑量）可在約 60 秒內達到插管條件，有 Sugammadex 可逆轉。Rocuronium 0.6 mg/kg 起效太慢，不適合 RSI。'},
+
+{cat:'clinical', diff:3, q:'【多重禁忌的複雜患者】\n55歲男性，已知惡性高熱家族史，合併重度哮喘和輕度腎功能不全，需要全身麻醉進行腹部手術。哪種方案最合適？',
+ opts:['Sevoflurane 吸入誘導 + Succinylcholine + Fentanyl','Propofol TIVA + Rocuronium + Remifentanil','Desflurane + Rocuronium + Fentanyl','Propofol 誘導 + Sevoflurane 維持 + Rocuronium'],
+ ans:1, exp:'惡性高熱家族史禁用所有揮發性麻醉劑和 Succinylcholine，排除 A、C、D。Propofol TIVA 避免觸發 MH；Rocuronium 為非去極化肌鬆劑，安全；Remifentanil 由非特異性酯酶代謝，不受腎功能影響，且具有支氣管擴張協同效應（減少刺激）。此組合同時解決三個問題：MH 風險、哮喘、腎功能不全。'},
+
+{cat:'clinical', diff:3, q:'【緊急剖腹產全身麻醉 RSI】\n30歲產婦，胎兒嚴重心動過緩，需要緊急 1 級剖腹產，脊椎麻醉來不及。產婦血壓正常，無已知藥物過敏。最佳 RSI 方案是？',
+ opts:['Propofol 2–2.8 mg/kg + Succinylcholine 1–1.5 mg/kg，胎兒娩出前不給鴉片類','Ketamine 2 mg/kg + Rocuronium 1.2 mg/kg + Fentanyl 2 mcg/kg','Etomidate 0.3 mg/kg + Succinylcholine 1.5 mg/kg + Remifentanil','Midazolam 0.3 mg/kg + Rocuronium 0.6 mg/kg'],
+ ans:0, exp:'根據 ASA 和 ACOG 指南，Propofol 2–2.8 mg/kg + Succinylcholine 1–1.5 mg/kg 是緊急剖腹產全身麻醉的標準 RSI 方案。胎兒娩出前通常不給鴉片類，以避免新生兒呼吸抑制。Midazolam 起效慢、Rocuronium 0.6 mg/kg 劑量不足。高劑量 Rocuronium 1.2 mg/kg + Sugammadex 備用是 Succinylcholine 禁忌時的替代方案。'},
+
+{cat:'clinical', diff:2, q:'【術中惡性高熱辨識與處理】\n8歲男孩在 Sevoflurane 麻醉下進行扁桃體切除術。術中 30 分鐘後，呼氣末 CO₂ 從 35 突升至 65 mmHg，心率從 90 升至 150 次/分，體溫 37.8°C。最優先的處理步驟是？',
+ opts:['增加分鐘通氣量並觀察','立即停止 Sevoflurane，改用 TIVA，給予 Dantrolene 2.5 mg/kg','給予 Esmolol 控制心率','給予物理降溫並繼續手術'],
+ ans:1, exp:'呼氣末 CO₂ 急劇升高（儘管通氣量正常）+ 心動過速 = 高度懷疑惡性高熱。體溫升高可能是較晚出現的表現，不應等待體溫升高才處理。最優先步驟：①立即停止 Sevoflurane ②改用 TIVA（Propofol + Opioid）③給予 Dantrolene 2.5 mg/kg IV（可重複至 10 mg/kg）④過度通氣降 CO₂ ⑤積極降溫 ⑥監測電解質。單純增加通氣量（A）會延誤治療，Esmolol 不解決根本問題。'},
+
+{cat:'clinical', diff:2, q:'【ICU Propofol 鎮靜併發症】\n62歲男性，ARDS，ICU 機械通氣第 4 天。Propofol 60 mcg/kg/min 維持鎮靜。今日出現：不明原因代謝性酸中毒（pH 7.25，乳酸 6.2 mmol/L）、CK 15,000 U/L、三酸甘油酯正常、心電圖新發右束支傳導阻滯。最可能的診斷和最優先處理是？',
+ opts:['敗血症惡化 → 加強抗生素','PRIS → 立即停止 Propofol，改用替代鎮靜劑','急性心肌梗塞 → 緊急心導管','橫紋肌溶解（非藥物相關）→ 積極補液'],
+ ans:1, exp:'代謝性酸中毒 + 乳酸升高 + CK 升高（橫紋肌溶解）+ 新發傳導異常，在 Propofol 長期輸注背景下 = PRIS。注意：三酸甘油酯正常不能排除 PRIS — 最新研究顯示典型特徵（高三酸甘油酯、發燒）在 >95% 的 PRIS 病例中缺失。最優先處理：立即停止 Propofol，改用 Dexmedetomidine 或 Midazolam。'},
+
+{cat:'clinical', diff:3, q:'【Fentanyl 引起的胸壁僵硬】\n誘導過程中快速推注 Fentanyl 5 mcg/kg 後，患者出現嚴重胸壁僵硬，面罩通氣困難。此時尚未給予肌鬆劑。最佳處理是？',
+ opts:['給予 Naloxone 0.4 mg 逆轉 Fentanyl','立即給予 Succinylcholine 或 Rocuronium 進行肌鬆','嘗試更大力的面罩通氣','等待 Fentanyl 效果消退'],
+ ans:1, exp:'Fentanyl 快速推注引起的胸壁僵硬（木胸症候群）是危及生命的緊急情況，因為無法通氣。最有效處理是立即給予神經肌肉阻滯劑（Succinylcholine 1.5 mg/kg 或 Rocuronium 1.2 mg/kg）解除肌肉僵硬後插管通氣。Naloxone 起效太慢且會逆轉鎮痛；等待缺氧無法接受；更大力面罩通氣通常無效。'},
+
+{cat:'clinical', diff:2, q:'【術中支氣管痙攣處理】\n50歲女性，全麻（Propofol + Sevoflurane + Rocuronium）下進行膽囊切除術。插管後出現嚴重支氣管痙攣，氣道壓急劇升高，SpO₂ 88%。最合適的處理是？',
+ opts:['加深 Sevoflurane + 給予 Salbutamol 霧化','立即拔管','給予 Sugammadex 逆轉 Rocuronium','改用 Desflurane'],
+ ans:0, exp:'術中支氣管痙攣的處理：①加深麻醉（Sevoflurane 本身具有支氣管擴張作用）②給予 Salbutamol 霧化 ③排除機械原因（管位、分泌物）④必要時 IV Epinephrine。Desflurane 有氣道刺激性，會加重支氣管痙攣，絕對禁忌。拔管在深度支氣管痙攣時可能加重喉痙攣。Sugammadex 不能解決支氣管痙攣。'},
+
+{cat:'clinical', diff:3, q:'【過敏性休克的處理順序】\n35歲女性，全麻誘導後 2 分鐘（已給予 Propofol + Fentanyl + Rocuronium），出現嚴重低血壓（BP 60/30）、全身蕁麻疹、支氣管痙攣。高度懷疑過敏性休克。最正確的處理順序是？',
+ opts:['Epinephrine IM → 補液 → 停藥 → Sugammadex','停止所有可疑藥物 → Epinephrine IV → 補液 → 考慮 Sugammadex','Hydrocortisone IV → Diphenhydramine → Epinephrine','Sugammadex 16 mg/kg → Epinephrine → 補液'],
+ ans:1, exp:'全麻中過敏性休克（AHA 2025 指引）：①停止所有可疑藥物 ②Epinephrine IV 10–50 μg（已有靜脈通路，IV 優於 IM）③大量補液 20–30 mL/kg ④考慮 Sugammadex（若懷疑 Rocuronium 為過敏原，可包裹移除）。Hydrocortisone 和 Diphenhydramine 已不再列為即時處理，起效慢，不能逆轉低血壓。過敏性休克死亡的最常見可預防原因是延遲給予 Epinephrine。'},
+
+{cat:'clinical', diff:2, q:'【高齡合併心血管疾病的誘導】\n82歲女性（50 kg），ASA III，合併冠心病和輕度認知障礙，需要全麻進行髖關節置換術。以下哪種誘導方案最合適？',
+ opts:['Propofol 2.5 mg/kg 快速推注','Propofol 1–1.5 mg/kg 緩慢滴定 + Fentanyl 1 mcg/kg','Etomidate 0.3 mg/kg + Fentanyl 2 mcg/kg','Ketamine 2 mg/kg + Midazolam 2 mg'],
+ ans:1, exp:'老年患者對 Propofol 敏感性增加，標準劑量（2.5 mg/kg）可能導致嚴重低血壓。減量 Propofol（1–1.5 mg/kg）緩慢滴定是最安全方法；小劑量 Fentanyl 可減少 Propofol 需求量。Etomidate 雖血流動力學穩定，但在擇期手術中腎上腺抑制和肌陣攣問題使其非首選。Ketamine 引起心動過速和高血壓，對冠心病患者不利。'},
+
+{cat:'clinical', diff:2, q:'【末期腎病的鴉片類選擇】\n58歲男性，終末期腎病（eGFR 8 mL/min），需要全身麻醉進行動靜脈瘻管手術（預計 2 小時）。以下哪種鴉片類藥物最適合術中鎮痛？',
+ opts:['Morphine — 經典鴉片類','Fentanyl — 效力強劑量小','Remifentanil — 代謝不受腎功能影響','Meperidine — 鎮痛加鎮靜'],
+ ans:2, exp:'Remifentanil 由血漿和組織中的非特異性酯酶代謝，藥代動力學完全不受腎功能影響，是終末期腎病患者的理想選擇。Morphine 的活性代謝物（M6G）經腎排泄，在腎衰竭中蓄積，可導致延長呼吸抑制。Meperidine 的代謝物 Normeperidine 在腎衰竭中蓄積，可引起癲癇發作，禁忌使用。Fentanyl 雖比 Morphine 安全，但長時間使用仍可能蓄積。'},
+
+{cat:'clinical', diff:3, q:'【創傷性腦損傷的鎮靜選擇】\n40歲男性，嚴重 TBI（GCS 6），ICP 25–30 mmHg。已使用 Propofol 40 mcg/kg/min 和 Fentanyl 輸注，ICP 仍未控制。最合適的下一步是？',
+ opts:['增加 Propofol 至 80 mcg/kg/min','加用 Ketamine 輸注作為輔助鎮靜','改用 Midazolam 輸注替代 Propofol','立即給予 Pentobarbital 昏迷治療'],
+ ans:1, exp:'最新證據顯示 Ketamine 在 TBI 患者中不會增加 ICP，反而可能減少皮質擴散去極化事件，且具有鎮痛作用可減少鴉片類需求。加用低劑量 Ketamine 輸注是合理的輔助選擇。增加 Propofol 至 80 mcg/kg/min 超過推薦最大劑量（50 mcg/kg/min），PRIS 風險顯著增加。Pentobarbital 昏迷是最後手段（Tier 3），應在所有其他措施失敗後才考慮。'},
+
+{cat:'clinical', diff:2, q:'【兒科吸入誘導的藥物選擇】\n4歲男孩，需要全麻進行腹股溝疝修補術。靜脈通路困難，計劃面罩吸入誘導。以下哪種方案最合適？',
+ opts:['Desflurane — 血氣分配係數最低起效最快','Sevoflurane — 氣味宜人氣道刺激小','Isoflurane — 最經濟實惠','Propofol 直腸給藥誘導'],
+ ans:1, exp:'Sevoflurane 是兒科面罩吸入誘導的金標準。氣味宜人（類似水果香味）、無氣道刺激，兒童接受度高，可在無靜脈通路下順利誘導。Desflurane 雖血氣分配係數最低，但刺激性氣味會引起咳嗽、喉痙攣和支氣管痙攣，絕對不適合吸入誘導（尤其兒童）。吸入誘導的關鍵不僅是起效速度，更重要是氣道耐受性。'},
+
+{cat:'clinical', diff:3, q:'【重症肌無力的肌鬆劑選擇】\n45歲女性，重症肌無力（Osserman IIb），需要全麻進行胸腺切除術。以下關於肌鬆劑的敘述，哪項最正確？',
+ opts:['Succinylcholine 效果正常，可安全使用標準劑量','應完全避免使用任何肌鬆劑','非去極化肌鬆劑（如 Rocuronium）敏感性增加，需減量，並備好 Sugammadex','應使用雙倍劑量 Rocuronium 以確保完全肌鬆'],
+ ans:2, exp:'重症肌無力患者神經肌肉接頭的乙醯膽鹼受體數量減少，導致對非去極化肌鬆劑敏感性增加（需減量至正常劑量 1/3–1/2），對 Succinylcholine 則有抵抗性（反應不可預測）。Sugammadex 的出現使 Rocuronium 成為 MG 患者理想肌鬆劑，可快速、完全、可靠逆轉，避免術後殘餘肌鬆導致呼吸衰竭。核心原則：少量多次、密切監測、確保完全逆轉。'},
+
+{cat:'clinical', diff:2, q:'【Propofol 與 Fentanyl 的藥物交互作用】\n全麻誘導中，先給予 Fentanyl 2 mcg/kg，再給予 Propofol。與單獨使用 Propofol 相比，以下哪項最可能發生？',
+ opts:['Propofol 的誘導劑量需要增加','Propofol 的誘導劑量可以減少，但低血壓和心動過緩風險增加','兩藥之間無交互作用','Fentanyl 會拮抗 Propofol 的效果'],
+ ans:1, exp:'Fentanyl 與 Propofol 之間存在協同作用：先給 Fentanyl 可減少 Propofol 誘導劑量約 30–50%（共同誘導效應）。但兩藥合用會增加低血壓和心動過緩風險，因為兩者均抑制交感神經張力。臨床應用：老年患者和血流動力學不穩定患者風險更大，應緩慢滴定，並備好 Ephedrine 或 Phenylephrine。「合用可以減量」但「減量不等於無風險」。'},
+
+{cat:'clinical', diff:3, q:'【雞蛋過敏合併 MH 家族史】\n38歲女性，已知對雞蛋嚴重過敏，且有惡性高熱家族史，需要全麻進行子宮肌瘤切除術。以下哪種方案最安全？',
+ opts:['Propofol TIVA + Rocuronium + Fentanyl','Etomidate + Rocuronium + Remifentanil（全靜脈麻醉）','Sevoflurane + Rocuronium + Fentanyl','Ketamine + Midazolam + Rocuronium（全靜脈麻醉）'],
+ ans:1, exp:'系統性排除法：① 雞蛋嚴重過敏反應史 → Propofol 含卵磷脂，風險效益比不利 → 排除 A ② MH 家族史 → 禁用所有揮發性麻醉劑和 Succinylcholine → 排除 C。注意：最新 BJA 綜述指出，雞蛋過敏通常不是 Propofol 禁忌，但對有嚴重過敏性休克史者仍應謹慎評估。Etomidate + Rocuronium + Remifentanil 全靜脈麻醉：Etomidate 不含卵磷脂，全靜脈避免 MH，Rocuronium 安全，Remifentanil 精確鎮痛。'},
+
+{cat:'clinical', diff:2, q:'【苯二氮䓬類 + 鴉片類的致命組合】\n術後恢復室，65歲男性（COPD），使用 Fentanyl PCA。護理師發現患者焦慮，請求給予 Midazolam 2 mg IV。以下哪項是最重要的考量？',
+ opts:['可以安全給予，兩藥無交互作用','合用可能導致深度鎮靜、呼吸抑制甚至死亡，需極度謹慎並密切監測','應先停止 Fentanyl PCA 再給 Midazolam','Midazolam 在術後恢復室禁忌使用'],
+ ans:1, exp:'苯二氮䓬類 + 鴉片類是 FDA 黑框警告的致命組合。此患者的高危因素：65 歲（對兩類藥物敏感性增加）、COPD（基線呼吸功能受損）、正在使用 Fentanyl PCA。焦慮應先排除其他原因（疼痛控制不足、低氧、譫妄）。若必須使用，應極低劑量（0.5–1 mg）並持續監測 SpO₂、呼吸頻率和意識狀態。術後恢復室是此交互作用導致呼吸驟停的高發場所。'},
+
+{cat:'clinical', diff:3, q:'【殘餘肌鬆的逆轉決策】\n腹腔鏡手術結束，使用 Rocuronium 0.6 mg/kg 已過 90 分鐘。TOF（四個成串刺激）T4/T1 比值為 0.6。外科醫師催促拔管。最正確的處理是？',
+ opts:['TOF 比值 0.6 已足夠，可以安全拔管','給予 Neostigmine 50 mcg/kg + Glycopyrrolate，等待 TOF ≥ 0.9 再拔管','給予 Sugammadex 2 mg/kg，等待 TOF ≥ 0.9 再拔管','不需要逆轉，直接拔管並在恢復室觀察'],
+ ans:2, exp:'TOF 比值 0.6 代表仍有顯著殘餘肌鬆，安全拔管標準是 TOF ≥ 0.9。Sugammadex 2 mg/kg 可在約 2–3 分鐘內將 TOF 恢復至 ≥ 0.9（ASA 2023 強烈建議，優於 Neostigmine）。Cochrane 統合分析顯示 Sugammadex 逆轉時間顯著更短（2.0 vs 12.9 分鐘），心動過緩風險更低（RR 0.16）。在外科催促的壓力下，Sugammadex 是更安全的選擇，永遠不要在 TOF < 0.9 時拔管。'},
+
+{cat:'clinical', diff:3, q:'【多器官衰竭危重症的綜合麻醉決策】\n60歲男性，敗血性休克（MAP 58，Norepinephrine 0.5 mcg/kg/min），合併 ARDS（P/F ratio 80）、急性腎損傷（Cr 3.2 mg/dL），疑似腹腔膿瘍需要緊急手術。以下哪種方案最合適？',
+ opts:['Propofol 2 mg/kg + Sevoflurane 維持 + Morphine + Succinylcholine','Ketamine 1–1.5 mg/kg + Rocuronium 1.2 mg/kg → Propofol/Ketamine 低劑量維持 + Remifentanil 輸注','Etomidate 0.3 mg/kg + Succinylcholine 1.5 mg/kg → Sevoflurane 維持 + Fentanyl','Midazolam 0.3 mg/kg + Rocuronium 0.6 mg/kg → Midazolam 輸注 + Morphine'],
+ ans:1, exp:'方案 B 的優勢：Ketamine 1–1.5 mg/kg（減量）在敗血性休克中提供相對穩定的血流動力學；Rocuronium 1.2 mg/kg 為 RSI 劑量，無高鉀血症風險；低劑量 Propofol/Ketamine 維持可降低各自的 PRIS 和兒茶酚胺耗竭風險；Remifentanil 代謝不受腎功能影響，且超短效允許精確滴定。A 的問題：Propofol 全劑量誘導低血壓、Morphine 在腎損傷中蓄積、Succinylcholine 在危重症有高鉀血症風險。C 的問題：敗血症患者使用 Etomidate 有腎上腺抑制爭議，Fentanyl 不如 Remifentanil 理想。D 的問題：Midazolam 在休克中引起嚴重低血壓，Morphine 腎損傷禁忌。'},
+
+// ─── ADVANCED Q91–100 ───
+{cat:'advanced', diff:2, q:'【Remimazolam 用於高風險 TAVR 鎮靜】\n78歲男性，BMI 18，ASA IV，嚴重主動脈瓣狹窄（瓣口面積 0.7 cm²），需行 TAVR 術中鎮靜，希望維持自主呼吸和血流動力學穩定。以下哪種鎮靜方案最適合？',
+ opts:['Propofol TCI（目標濃度 2 μg/mL）','Midazolam 2 mg IV bolus + 重複給藥','Remimazolam 5 mg IV bolus → 1 mg/min 持續輸注，滴定至 MOAA/S 3–4','Dexmedetomidine 1 μg/kg 負荷 → 0.7 μg/kg/h 輸注'],
+ ans:2, exp:'嚴重主動脈瓣狹窄的麻醉核心是維持前負荷、後負荷和竇性節律，避免低血壓和心動過速。Remimazolam 統合分析（42項RCT，10,540名患者）顯示相較 Propofol，心血管併發症降低 56%（RR 0.44），呼吸抑制降低 64%（RR 0.36），且可被 Flumazenil 逆轉，是此類「不能出錯」高風險患者的最佳安全網。Propofol TCI 即使低濃度在嚴重主動脈瓣狹窄中也可能引起致命低血壓。Midazolam 效果不可預測、蓄積風險高。Dexmedetomidine 1 μg/kg 負荷可能引起顯著心動過緩和低血壓，若使用應省略負荷劑量或大幅減量。'},
+
+{cat:'advanced', diff:2, q:'【Ciprofol 的藥理特性】\n45歲女性行無痛胃鏡，麻醉科醫師選擇 Ciprofol。以下關於 Ciprofol 的敘述，何者正確？',
+ opts:['Ciprofol 主要由非特異性血漿酯酶代謝，類似 Remifentanil','Ciprofol 的效力約為 Propofol 的 4–5 倍，因此誘導劑量約為 Propofol 的 1/4–1/5','Ciprofol 可被 Flumazenil 逆轉','Ciprofol 的注射痛發生率與 Propofol 相當（約 60%）'],
+ ans:1, exp:'Ciprofol 效力為 Propofol 的 4–5 倍，ED95 劑量：18–40 歲 0.61 mg/kg、41–65 歲 0.45 mg/kg、66–85 歲 0.41 mg/kg，遠低於 Propofol 的 1.5–2.5 mg/kg。代謝途徑為 CYP2B6（氧化）和 UGT1A9（葡萄糖醛酸化），而非血漿酯酶，故 CYP2B6 慢代謝者可能出現延長鎮靜。Ciprofol 作用於 GABA-A 受體的 Propofol 結合位點，無法被 Flumazenil 逆轉（Flumazenil 僅逆轉苯二氮䓬類）。注射痛發生率極低（約 3%），是 Propofol 的重要優勢改良。'},
+
+{cat:'advanced', diff:3, q:'【三重禁忌 + CYP2B6 多態性】\n32歲女性，惡性高熱家族史（RYR1 基因突變確認）、嚴重雞蛋過敏反應史（曾引起過敏性休克）、CYP2B6 慢代謝型，需行腹腔鏡膽囊切除術。以下哪種麻醉方案最合適？',
+ opts:['Propofol + Remifentanil + Rocuronium（標準 TIVA）','Remimazolam + Remifentanil + Rocuronium','Ciprofol + Remifentanil + Rocuronium','Etomidate 誘導 + Sevoflurane 維持 + Rocuronium'],
+ ans:1, exp:'系統性排除：① MH 家族史 → 禁用所有揮發性麻醉劑和 Succinylcholine → 排除 D ② 雞蛋嚴重過敏性休克史 → Propofol 含卵磷脂，雖最新 BJA 綜述指出雞蛋過敏通常非 Propofol 禁忌，但有過敏性休克史者風險效益比不利 → 排除 A ③ CYP2B6 慢代謝型 → Ciprofol 主要由 CYP2B6 代謝，慢代謝者鎮靜延長 → 排除 C。Remimazolam 由組織酯酶代謝（不依賴 CYP2B6），不含卵磷脂，不觸發 MH，可被 Flumazenil 逆轉，是此患者唯一兼顧所有禁忌的安全選擇。'},
+
+{cat:'advanced', diff:2, q:'【2025 NEJM RSI 試驗的正確解讀】\n58歲男性，敗血性休克（乳酸 4.2 mmol/L），Norepinephrine 0.3 μg/kg/min，需緊急插管。根據 2025 年 NEJM RSI 試驗（2365名患者），以下敘述何者最準確？',
+ opts:['Ketamine 在敗血性休克患者中的 28 天死亡率顯著低於 Etomidate','Etomidate 在插管期間的血流動力學穩定性優於 Ketamine，但兩者死亡率無差異','Ketamine 在已使用升壓藥的患者中不會增加插管期低血壓風險','由於 Etomidate 的腎上腺抑制，SCCM 2023 指引已將其從 RSI 推薦中移除'],
+ ans:1, exp:'2025 年 NEJM RSI 試驗明確顯示：① Etomidate 在插管期間的低血壓、升壓藥需求和室性心動過速發生率均低於 Ketamine，尤其在敗血症和已使用升壓藥的亞組中更顯著 ② 兩者 28 天死亡率無顯著差異。Ketamine 在已使用升壓藥患者中確實增加了插管期低血壓風險（兒茶酚胺耗竭假說）。SCCM 2023 指引仍將兩者均列為合理選擇（條件性建議），並未移除 Etomidate。此試驗改變了「Ketamine 在休克患者中血流動力學更穩定」的傳統認知。'},
+
+{cat:'advanced', diff:3, q:'【Child-Pugh C 肝硬化患者的鎮靜選擇】\n55歲男性，酒精性肝硬化（Child-Pugh C，MELD 28），需行急診上消化道內視鏡止血。以下哪種鎮靜方案最安全？',
+ opts:['Propofol 1 mg/kg bolus → 按需追加','Midazolam 2 mg + Fentanyl 50 μg','Remimazolam 0.1 mg/kg bolus + Sufentanil 0.05 μg/kg，按需追加 Remimazolam','Ketamine 0.5 mg/kg bolus'],
+ ans:2, exp:'Child-Pugh C 肝硬化面臨多重挑戰：藥物代謝嚴重下降、肝性腦病風險、門脈高壓出血。一項專門針對肝硬化患者的 RCT（148名患者）顯示，Remimazolam + Sufentanil 相較 Propofol，呼吸抑制（2.7% vs 17.6%）、體動（8.1% vs 23.0%）和低血壓（4.1% vs 14.9%）均顯著更低，且可被 Flumazenil 逆轉提供額外安全網。Midazolam 在肝硬化中半衰期延長至正常的 3–5 倍，嚴重蓄積且可能誘發肝性腦病。Propofol 在嚴重肝硬化中代謝亦受影響，且無拮抗劑。Ketamine 可能升高門脈壓力，增加出血風險。'},
+
+{cat:'advanced', diff:3, q:'【高風險困難氣道的清醒插管鎮靜】\n82歲女性，BMI 35，Mallampati IV，頸椎活動受限，需行髖關節置換術，計劃清醒纖維支氣管鏡插管。以下哪種鎮靜方案最適合？',
+ opts:['Midazolam 2 mg IV + Fentanyl 50 μg IV','Propofol TCI（目標濃度 1.5 μg/mL）','Remimazolam 2.5 mg IV bolus + Sufentanil 0.05 μg/kg，滴定至 MOAA/S 3','Dexmedetomidine 0.5 μg/kg 負荷（10 分鐘）→ 0.5 μg/kg/h 輸注'],
+ ans:2, exp:'清醒纖維支氣管鏡插管的鎮靜目標：維持自主呼吸和氣道保護反射，同時提供足夠舒適度和合作度。RCT 顯示 Remimazolam 在困難氣道清醒插管中，首次插管成功率 100%（vs Midazolam 70%），且不良事件最低。老年患者應使用減量（2.5 mg 而非 5 mg）。可被 Flumazenil 逆轉是困難氣道的救命安全網 — 若鎮靜過深導致氣道喪失，逆轉劑可即時解救。Propofol TCI 即使低濃度也可能導致氣道喪失，在困難氣道中風險過高。Dexmedetomidine 起效慢（需 10–15 分鐘），老年患者心動過緩風險較高，RCT 顯示 Remimazolam 優於 Dexmedetomidine。'},
+
+{cat:'advanced', diff:2, q:'【NMBA 引起的圍術期過敏性休克】\n40歲女性全麻誘導後 2 分鐘，給予 Rocuronium 0.6 mg/kg 後出現：全身蕁麻疹、支氣管痙攣、MAP 從 85 降至 40 mmHg、HR 130 bpm。最優先的處理步驟是？',
+ opts:['立即給予 Sugammadex 16 mg/kg 以中和 Rocuronium','立即給予 Epinephrine 10–50 μg IV + 停止所有可疑藥物 + 大量補液','立即給予 Hydrocortisone 200 mg IV + Diphenhydramine 50 mg IV','立即給予 Methylene blue 1.5 mg/kg IV'],
+ ans:1, exp:'AHA 2025 指引和 NAP6 研究均強調：圍術期過敏性休克的第一線、最優先治療是 Epinephrine IV 10–50 μg（已有靜脈通路時 IV 優於 IM），同時停止所有可疑藥物並大量補液 20–30 mL/kg。「Epinephrine → Epinephrine → Epinephrine」是處理核心，延遲給予是過敏性休克死亡的最常見可預防原因。Sugammadex 雖可包裹 Rocuronium 減少抗原暴露，但 AHA 明確指出其證據僅限病例報告，不應取代或延遲 Epinephrine，可作為第二線輔助。Hydrocortisone 和 Diphenhydramine 已不再列為即時處理（起效 4–6 小時）。Methylene blue 是第三線治療，用於難治性血管擴張性休克。'},
+
+{cat:'advanced', diff:2, q:'【Propofol 輸注症候群（PRIS）的識別與處理】\n28歲男性，TBI 後 ICU，Propofol 5 mg/kg/h 鎮靜已 48 小時。護理師報告：心動過緩（HR 45 bpm）、代謝性酸中毒（pH 7.18，乳酸 8.5 mmol/L）、CK 15,000 U/L、三酸甘油酯升高。最關鍵的處理是？',
+ opts:['將 Propofol 減量至 3 mg/kg/h 並密切觀察','立即停止 Propofol，轉換為替代鎮靜劑，並開始支持治療','給予碳酸氫鈉糾正酸中毒，繼續 Propofol','給予 Dantrolene 2.5 mg/kg IV（懷疑惡性高熱）'],
+ ans:1, exp:'此患者符合 PRIS 的典型診斷：高劑量 Propofol（>4 mg/kg/h）超過 48 小時 + 心動過緩 + 代謝性酸中毒 + 橫紋肌溶解（CK 升高）+ 高三酸甘油酯。PRIS 死亡率高達 33–66%，一旦懷疑必須立即停藥 — 減量不夠，必須完全停止。支持治療包括：血流動力學支持（可能需要起搏器）、糾正酸中毒、補液、必要時 CRRT。轉換為 Dexmedetomidine 或 Midazolam 維持鎮靜。MH（D）的特徵是接觸觸發藥物後迅速發展，與此情境不符。'},
+
+{cat:'advanced', diff:2, q:'【Remimazolam 的再鎮靜現象】\n70歲男性行結腸鏡，Remimazolam 總量 15 mg（多次追加）。檢查結束後患者嗜睡，給予 Flumazenil 0.3 mg IV 後迅速清醒。15 分鐘後，患者再次出現深度嗜睡、SpO₂ 88%。最可能的原因和處理是？',
+ opts:['Flumazenil 過敏反應 → 給予 Epinephrine','Remimazolam 的再鎮靜現象（Flumazenil 作用時間短於蓄積的 Remimazolam）→ 重複給予 Flumazenil + 延長監測','鴉片類過量 → 給予 Naloxone','腦血管意外 → 緊急 CT'],
+ ans:1, exp:'再鎮靜（Resedation）是 Flumazenil 使用後的已知現象：Flumazenil 的作用時間（45–90 分鐘）短於高劑量苯二氮䓬類（包括 Remimazolam）蓄積後的效果持續時間，當 Flumazenil 效果消退後，殘留的 Remimazolam 再次發揮作用，導致再次鎮靜。處理：重複給予 Flumazenil（0.1–0.2 mg，可重複至總量 1 mg），延長監測時間至 2 小時以上。臨床要點：接受高劑量或多次追加 Remimazolam 的患者，即使給予 Flumazenil 後清醒，也不能立即停止監測。'},
+
+{cat:'advanced', diff:3, q:'【五重禁忌的終極綜合決策】\n68歲男性：敗血性休克（Norepinephrine 0.2 μg/kg/min）、急性腎損傷（eGFR 15 mL/min）、肝硬化（Child-Pugh B）、惡性高熱家族史、既往 Rocuronium 過敏（皮膚試驗確認）。需緊急行剖腹探查術。以下哪種麻醉方案最合適？',
+ opts:['Ketamine 1 mg/kg + Cisatracurium 0.15 mg/kg → Ketamine/Remifentanil TIVA 維持','Etomidate 0.3 mg/kg + Succinylcholine 1.5 mg/kg → Propofol/Fentanyl 維持','Remimazolam 0.2 mg/kg + Vecuronium 0.1 mg/kg → Remimazolam/Remifentanil 維持','Propofol 1 mg/kg + Rocuronium 1.2 mg/kg → Sevoflurane 維持'],
+ ans:0, exp:'系統性排除五重禁忌：① MH 家族史 → 禁用所有揮發性麻醉劑和 Succinylcholine → 排除 B（Succinylcholine）和 D（Sevoflurane）② Rocuronium 過敏 → 禁用 Rocuronium → 排除 D ③ 肝硬化 Child-Pugh B → Remimazolam 在嚴重肝功能不全中代謝延長，用於誘導時需謹慎 → C 存在疑慮。方案 A 的優勢：Ketamine 在敗血性休克中提供相對血流動力學穩定；Cisatracurium 由 Hofmann 消除（不依賴肝腎功能），是肝腎損傷患者最安全的肌鬆劑；Remifentanil 代謝不受腎肝功能影響；全靜脈麻醉避免 MH 觸發。'},
+
+];
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let selectedCats = new Set();
+let mode = 'timed';
+let quizQuestions = [];
+let current = 0;
+let score = 0;
+let timerInterval = null;
+let timeLeft = 30;
+let answered = false;
+let timeUsed = [];
+let results = [];
+let retryMode = false;
+
+// ── font size ──
+function setFont(btn) {
+  document.querySelectorAll('.font-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.body.className = document.body.className.replace(/fs-\w+/g, '').trim();
+  document.body.classList.add(btn.dataset.fs);
+}
+document.body.classList.add('fs-md');
+
+// ═══════════════════════════════════════════
+//  WELCOME
+// ═══════════════════════════════════════════
+function buildCatGrid() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.style.setProperty('--accent', cat.color);
+    card.dataset.id = cat.id;
+    card.innerHTML = `
+      <div class="cat-label">${cat.label}</div>
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-eng">${cat.eng}</div>
+      <div class="cat-count">${cat.count} 題</div>
+    `;
+    card.onclick = () => toggleCat(cat.id, card);
+    grid.appendChild(card);
+  });
+}
+
+function toggleCat(id, card) {
+  if (selectedCats.has(id)) {
+    selectedCats.delete(id);
+    card.classList.remove('selected');
+  } else {
+    selectedCats.add(id);
+    card.classList.add('selected');
+  }
+  document.getElementById('startBtn').disabled = selectedCats.size === 0;
+}
+
+function selectMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mode = btn.dataset.mode;
+}
+
+// ═══════════════════════════════════════════
+//  QUIZ LOGIC
+// ═══════════════════════════════════════════
+function startQuiz() {
+  quizQuestions = ALL_QUESTIONS.filter(q => selectedCats.has(q.cat));
+  quizQuestions = quizQuestions.sort(() => Math.random() - 0.5);
+  current = 0; score = 0; timeUsed = []; results = []; retryMode = false;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function getQuestionTimer(q) {
+  const cat = CATEGORIES.find(c => c.id === q.cat);
+  return cat ? cat.timer : 30;
+}
+
+function getQuestionPoints(q) {
+  return q.cat === 'clinical' ? 5 : 1;
+}
+
+function showScreen(id) {
+  ['welcome','quiz','results'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = quizQuestions[current];
+  const total = quizQuestions.length;
+  const pct = (current / total) * 100;
+
+  document.getElementById('qIndex').textContent =
+    String(current+1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('scoreBadge').textContent = score + ' 分';
+
+  const cat = CATEGORIES.find(c => c.id === q.cat);
+
+  // difficulty badge for clinical questions
+  let diffHtml = '';
+  if (q.diff) {
+    const diffMap = { 1:['基礎','diff-1'], 2:['進階','diff-2'], 3:['專家','diff-3'] };
+    const [label, cls] = diffMap[q.diff] || ['',''];
+    diffHtml = `<span class="diff-badge ${cls}">${'⭐'.repeat(q.diff)} ${label}</span>`;
+  }
+
+  // render newlines in question text
+  const qText = (q.q || '').replace(/\n/g, '<br>');
+
+  const body = document.getElementById('quizBody');
+  body.innerHTML = `
+    <div class="cat-badge" style="--accent:${cat.color}">${cat.name} · ${cat.label}</div>${diffHtml ? '<div style="margin-bottom:16px">' + diffHtml + '</div>' : ''}
+    <div class="question-text">${qText}</div>
+    <div class="options-list" id="optsList"></div>
+  `;
+
+  const opts = document.getElementById('optsList');
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="opt-key">${String.fromCharCode(65+i)}</span><span>${opt}</span>`;
+    btn.onclick = () => chooseAnswer(i);
+    opts.appendChild(btn);
+  });
+
+  // timer — use per-category timer length
+  clearInterval(timerInterval);
+  if (mode === 'timed') {
+    timeLeft = getQuestionTimer(q);
+    updateTimer();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) { clearInterval(timerInterval); autoTimeout(); }
+    }, 1000);
+  } else {
+    document.getElementById('timerDisplay').textContent = '—';
+    document.getElementById('timerDisplay').className = 'timer-display';
+  }
+}
+
+function updateTimer() {
+  const q = quizQuestions[current];
+  const maxTime = getQuestionTimer(q);
+  const el = document.getElementById('timerDisplay');
+  el.textContent = timeLeft + 's';
+  const warnAt = Math.floor(maxTime * 0.33);
+  const dangerAt = Math.floor(maxTime * 0.17);
+  el.className = 'timer-display' + (timeLeft <= dangerAt ? ' danger' : timeLeft <= warnAt ? ' warn' : '');
+}
+
+function chooseAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  const maxTime = getQuestionTimer(quizQuestions[current]);
+  const used = mode === 'timed' ? maxTime - timeLeft : 0;
+  timeUsed.push(used);
+
+  const q = quizQuestions[current];
+  const correct = idx === q.ans;
+  const pts = getQuestionPoints(q);
+  if (correct) score += pts;
+
+  results.push({ q, userAns: idx, correct });
+
+  // style buttons
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.ans) btn.classList.add(correct ? 'correct' : 'missed');
+    else if (i === idx && !correct) btn.classList.add('wrong');
+  });
+
+  // flash
+  const flashMsg = correct ? (pts > 1 ? `正確！+${pts} 分` : '正確！') : '答錯了';
+  showFlash(flashMsg, correct ? 'correct' : 'wrong');
+
+  // explanation
+  const box = document.createElement('div');
+  box.className = 'explanation-box';
+  box.style.borderLeftColor = correct ? 'var(--accent-green)' : 'var(--accent-red)';
+  box.innerHTML = `
+    <div class="explanation-label">EXPLANATION</div>
+    <div class="explanation-text">${q.exp}</div>
+  `;
+  document.getElementById('quizBody').appendChild(box);
+
+  // next button
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'next-btn';
+  nextBtn.innerHTML = current < quizQuestions.length - 1
+    ? '下一題 <span class="arrow">→</span>'
+    : '查看結果 <span class="arrow">→</span>';
+  nextBtn.onclick = nextQuestion;
+  document.getElementById('quizBody').appendChild(nextBtn);
+
+  document.getElementById('scoreBadge').textContent = score + ' 分';
+}
+
+function autoTimeout() {
+  if (answered) return;
+  answered = true;
+  const maxTime = getQuestionTimer(quizQuestions[current]);
+  timeUsed.push(maxTime);
+  const q = quizQuestions[current];
+  results.push({ q, userAns: -1, correct: false });
+
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.ans) btn.classList.add('missed');
+  });
+
+  showFlash('時間到！', 'wrong');
+
+  const box = document.createElement('div');
+  box.className = 'explanation-box';
+  box.style.borderLeftColor = 'var(--accent-amber)';
+  box.innerHTML = `
+    <div class="explanation-label">EXPLANATION</div>
+    <div class="explanation-text">${q.exp}</div>
+  `;
+  document.getElementById('quizBody').appendChild(box);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'next-btn';
+  nextBtn.innerHTML = current < quizQuestions.length - 1
+    ? '下一題 <span class="arrow">→</span>'
+    : '查看結果 <span class="arrow">→</span>';
+  nextBtn.onclick = nextQuestion;
+  document.getElementById('quizBody').appendChild(nextBtn);
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= quizQuestions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+    document.getElementById('quizBody').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function showFlash(msg, type) {
+  const old = document.querySelector('.feedback-flash');
+  if (old) old.remove();
+  const el = document.createElement('div');
+  el.className = 'feedback-flash ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1900);
+}
+
+// ═══════════════════════════════════════════
+//  RESULTS
+// ═══════════════════════════════════════════
+function showResults() {
+  clearInterval(timerInterval);
+  showScreen('results');
+
+  const total = quizQuestions.length;
+  const maxScore = quizQuestions.reduce((s, q) => s + getQuestionPoints(q), 0);
+  const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+  const correctCount = results.filter(r => r.correct).length;
+  const avgTime = timeUsed.length ? Math.round(timeUsed.reduce((a,b)=>a+b,0)/timeUsed.length) : 0;
+
+  document.getElementById('resultScore').textContent = score;
+  document.getElementById('resultDenom').textContent = '/ ' + maxScore;
+  document.getElementById('statCorrect').textContent = correctCount;
+  document.getElementById('statWrong').textContent = total - correctCount;
+  document.getElementById('statTime').textContent = mode === 'timed' ? avgTime + 's' : '—';
+
+  // rank
+  const ranks = [
+    { min:86, label:'麻醉大師', sub:'臨床藥理掌握精熟，達到指導者水準', color:'var(--accent-cyan)' },
+    { min:71, label:'資深臨床護理師', sub:'藥理知識扎實，具備良好臨床判斷力', color:'var(--accent-green)' },
+    { min:57, label:'進階學習者', sub:'核心概念已熟悉，建議加強不良反應識別', color:'var(--accent-amber)' },
+    { min:0,  label:'繼續努力', sub:'建議系統性複習各藥物分類後再次測驗', color:'var(--accent-red)' },
+  ];
+  const rank = ranks.find(r => pct >= r.min);
+  document.getElementById('rankBadge').textContent = rank.label;
+  document.getElementById('rankBadge').style.color = rank.color;
+  document.getElementById('rankSub').textContent = rank.sub + ' · 正確率 ' + pct + '%';
+
+  // ring
+  const ring = document.getElementById('ringFill');
+  const circumference = 440;
+  ring.style.strokeDashoffset = circumference;
+  ring.style.stroke = rank.color;
+  setTimeout(() => {
+    ring.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+  }, 100);
+
+  // category breakdown
+  buildBreakdown();
+
+  // review
+  buildReview();
+}
+
+function buildBreakdown() {
+  const wrap = document.getElementById('catBreakdown');
+  wrap.innerHTML = '<div class="breakdown-title">PERFORMANCE BY CATEGORY</div>';
+
+  const usedCats = [...new Set(quizQuestions.map(q => q.cat))];
+  usedCats.forEach(catId => {
+    const cat = CATEGORIES.find(c => c.id === catId);
+    const catQs = results.filter(r => r.q.cat === catId);
+    const catCorrect = catQs.filter(r => r.correct).length;
+    const catPct = catQs.length ? Math.round((catCorrect / catQs.length) * 100) : 0;
+
+    const row = document.createElement('div');
+    row.className = 'breakdown-row';
+    row.innerHTML = `
+      <span class="breakdown-cat">${cat.name}</span>
+      <div class="breakdown-bar-wrap">
+        <div class="breakdown-bar-fill" style="width:0%;background:${cat.color}" data-pct="${catPct}"></div>
+      </div>
+      <span class="breakdown-pct">${catPct}%</span>
+    `;
+    wrap.appendChild(row);
+  });
+
+  setTimeout(() => {
+    document.querySelectorAll('.breakdown-bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  }, 200);
+}
+
+function buildReview() {
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+  const wrong = results.filter(r => !r.correct);
+
+  if (wrong.length === 0) {
+    document.querySelector('.review-header-text').textContent = '全部答對！';
+    return;
+  }
+
+  document.querySelector('.review-header-text').textContent =
+    `WRONG ANSWERS REVIEW · ${wrong.length} 題`;
+
+  wrong.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'review-item';
+    const userLabel = r.userAns === -1 ? '（超時未答）' : r.q.opts[r.userAns];
+    item.innerHTML = `
+      <div class="review-q">${r.q.q}</div>
+      <div class="review-answer-row">
+        <span class="review-answer user-wrong">你的答案：${userLabel}</span>
+        <span class="review-answer correct-ans">正確答案：${r.q.opts[r.q.ans]}</span>
+      </div>
+      <div class="explanation-text" style="font-size:12px;margin-top:10px;color:var(--text-muted);font-family:'Noto Sans TC',sans-serif">${r.q.exp}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function toggleReview() {
+  const list = document.getElementById('reviewList');
+  const toggle = document.getElementById('reviewToggle');
+  list.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function retryWrong() {
+  const wrong = results.filter(r => !r.correct).map(r => r.q);
+  if (wrong.length === 0) return;
+  quizQuestions = wrong.sort(() => Math.random() - 0.5);
+  current = 0; score = 0; timeUsed = []; results = []; retryMode = true;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function backToWelcome() {
+  selectedCats.clear();
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('startBtn').disabled = true;
+  showScreen('welcome');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+buildCatGrid();
+document.getElementById('startBtn').disabled = true;
+</script>
+</body>
+</html>
